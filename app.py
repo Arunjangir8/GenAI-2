@@ -121,7 +121,14 @@ div[data-testid="stSlider"] { background: var(--surface2) !important; border-col
 .stButton button:hover { opacity: 0.88 !important; }
 
 /* Tab */
-button[data-baseweb="tab"] { color: var(--text-muted) !important; background: transparent !important; }
+button[data-baseweb="tab"] {
+    color: var(--text-muted) !important;
+    background: transparent !important;
+    font-size: 1rem !important;
+    font-weight: 600 !important;
+    padding: 14px 28px !important;
+    letter-spacing: 0.3px !important;
+}
 button[data-baseweb="tab"][aria-selected="true"] { color: var(--accent) !important; border-bottom-color: var(--accent) !important; }
 </style>
 """, unsafe_allow_html=True)
@@ -273,25 +280,94 @@ def make_yield_gauge(yield_pct, city_avg):
     return fig
 
 
-def make_model_comparison_chart(pred):
-    models = ["Linear Regression", "Random Forest", "Ensemble"]
-    values = [
-        pred.get("Linear Regression", 0),
-        pred.get("Random Forest", 0),
-        pred.get("Ensemble", pred.get("Rule-Based", 0)),
-    ]
-    colors = ["#f7b731", "#00c9a7", "#6c63ff"]
+def make_rent_breakdown_chart(props, pred_rent):
+    city   = props.get("city", "Delhi")
+    size   = float(props.get("size_sqft", 1000))
+    bhk    = float(props.get("rooms", 2))
+    status = props.get("status", "Semi-Furnished")
+
+    base            = pred_rent * 0.30
+    size_contrib    = pred_rent * min(0.30, (size / 5000) * 0.35)
+    bhk_contrib     = pred_rent * min(0.15, (bhk / 6) * 0.15)
+    loc_contrib     = pred_rent * 0.15
+    furnish_map     = {"Furnished": 0.12, "Semi-Furnished": 0.07, "Unfurnished": 0.02}
+    furnish_contrib = pred_rent * furnish_map.get(status, 0.07)
+    city_map_c      = {"Mumbai": 0.10, "Delhi": 0.07, "Pune": 0.04}
+    city_contrib    = pred_rent * city_map_c.get(city, 0.07)
+
+    factors = ["Base Rate", "Size (sqft)", "BHK", "Location", "Furnishing", "City Premium"]
+    values  = [base, size_contrib, bhk_contrib, loc_contrib, furnish_contrib, city_contrib]
+    colors  = ["#6c63ff", "#00c9a7", "#f7b731", "#ee5a24", "#a78bfa", "#38bdf8"]
 
     fig = go.Figure(go.Bar(
-        x=models, y=values, marker_color=colors,
+        y=factors, x=values, orientation="h",
+        marker_color=colors,
+        text=[f"₹{v:,.0f}" for v in values],
+        textposition="outside",
+    ))
+    fig.update_layout(
+        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(color="#e4e6f0"),
+        xaxis=dict(gridcolor="#2a2f42", title="Contribution (₹)"),
+        yaxis=dict(gridcolor="rgba(0,0,0,0)"),
+        margin=dict(t=10, b=10, l=10, r=80), height=280, showlegend=False,
+    )
+    return fig
+
+
+def make_predicted_vs_market_chart(pred_rent, city):
+    city_avg = {"Delhi": 22000, "Mumbai": 38000, "Pune": 16000}.get(city, 20000)
+    values   = [pred_rent, city_avg]
+    delta    = pred_rent - city_avg
+    delta_pct = (delta / city_avg) * 100
+
+    fig = go.Figure(go.Bar(
+        x=["Your Property", "City Average"], y=values,
+        marker_color=["#6c63ff", "#2a2f42"],
         text=[f"₹{v:,.0f}" for v in values], textposition="outside",
     ))
+    fig.add_annotation(
+        x=0.5, y=max(values) * 1.18, xref="paper", yref="y",
+        text=f"{'Above' if delta >= 0 else 'Below'} avg by ₹{abs(delta):,.0f} ({abs(delta_pct):.1f}%)",
+        font=dict(color="#00c9a7" if delta >= 0 else "#f7b731", size=12),
+        showarrow=False,
+    )
     fig.update_layout(
         paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
         font=dict(color="#e4e6f0"),
         xaxis=dict(gridcolor="rgba(0,0,0,0)"),
         yaxis=dict(gridcolor="#2a2f42", title="Monthly Rent (₹)"),
-        margin=dict(t=20, b=0), height=260, showlegend=False,
+        margin=dict(t=40, b=10), height=280, showlegend=False,
+    )
+    return fig
+
+
+def make_rent_psf_gauge(pred_rent, size_sqft, city):
+    rent_psf  = pred_rent / max(size_sqft, 1)
+    city_psf  = {"Delhi": 22, "Mumbai": 40, "Pune": 14}.get(city, 20)
+
+    fig = go.Figure(go.Indicator(
+        mode="gauge+number+delta",
+        value=round(rent_psf, 2),
+        number={"prefix": "₹", "suffix": "/sqft", "font": {"size": 24, "color": "#e4e6f0"}},
+        delta={"reference": city_psf, "valueformat": ".1f"},
+        gauge={
+            "axis": {"range": [0, city_psf * 2], "tickcolor": "#7f8699"},
+            "bar": {"color": "#6c63ff"},
+            "bgcolor": "#1e2230",
+            "bordercolor": "#2a2f42",
+            "steps": [
+                {"range": [0, city_psf * 0.7],           "color": "#3d1010"},
+                {"range": [city_psf * 0.7, city_psf * 1.2], "color": "#1e2230"},
+                {"range": [city_psf * 1.2, city_psf * 2],   "color": "#1a3d30"},
+            ],
+            "threshold": {"line": {"color": "#00c9a7", "width": 3}, "value": city_psf},
+        },
+        title={"text": f"Rent/sqft vs City Benchmark (₹{city_psf}/sqft)", "font": {"color": "#7f8699", "size": 12}},
+    ))
+    fig.update_layout(
+        paper_bgcolor="rgba(0,0,0,0)", font_color="#e4e6f0",
+        height=250, margin=dict(t=30, b=0, l=20, r=20),
     )
     return fig
 
@@ -353,31 +429,117 @@ st.markdown("""
 # Architecture diagram
 with st.expander("Agent Workflow Architecture", expanded=False):
     st.markdown("""
-    ```
-    ┌─────────────────────────────────────────────────────────────────────┐
-    │                    LANGGRAPH AGENTIC PIPELINE                       │
-    │                                                                     │
-    │  [Input] ──► [1.Validate] ──► [2.Predict] ──► [3.RAG Retrieve]    │
-    │                                                        │            │
-    │                                               [4.Comparables]      │
-    │                                                        │            │
-    │                                             [5.Risk Assess] ◄─ LLM │
-    │                                                        │            │
-    │                                           [6.Gen Advice] ◄──── LLM │
-    │                                                        │            │
-    │                                          [7.Report] ◄──────── LLM  │
-    │                                                        │            │
-    │                                                    [OUTPUT]         │
-    └─────────────────────────────────────────────────────────────────────┘
+<style>
+.pipeline-wrap {
+    background: #161922;
+    border: 1px solid #2a2f42;
+    border-radius: 14px;
+    padding: 2rem 2rem 1.5rem;
+    margin-top: 0.5rem;
+}
+.pipeline-nodes {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0;
+    margin-bottom: 1.5rem;
+}
+.pnode {
+    background: #1e2230;
+    border: 1px solid #2a2f42;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #e4e6f0;
+    white-space: nowrap;
+}
+.pnode.input  { border-color: #6c63ff; color: #a5b4fc; }
+.pnode.ml     { border-color: #00c9a7; color: #00c9a7; }
+.pnode.rag    { border-color: #38bdf8; color: #38bdf8; }
+.pnode.llm    { border-color: #f7b731; color: #f7b731; }
+.pnode.output { border-color: #00c9a7; background: #1a3d30; color: #00e5a0; }
+.parrow {
+    color: #2a2f42;
+    font-size: 1.1rem;
+    padding: 0 6px;
+    font-weight: 700;
+}
+.pipeline-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 10px;
+}
+.pipeline-divider { border-color: #2a2f42; margin: 1rem 0; }
+.comp-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px;
+}
+.comp-card {
+    background: #1e2230;
+    border: 1px solid #2a2f42;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 0.78rem;
+}
+.comp-card .comp-title { font-weight: 700; margin-bottom: 4px; }
+.comp-card .comp-desc  { color: #7f8699; }
+</style>
 
-    Components:
-    • LangGraph StateGraph   — Explicit state management across 7 nodes
-    • Groq (LLaMA 3.3 70B)  — Risk analysis, investment advice, report generation
-    • FAISS + SentenceTransformers — Market knowledge RAG (no OpenAI needed)
-    • Scikit-learn ML        — Price prediction (Linear Regression + Random Forest)
-    • Streamlit              — Interactive web UI
-    ```
-    """)
+<div class="pipeline-wrap">
+  <div style="font-size:0.7rem;font-weight:700;letter-spacing:1.5px;color:#7f8699;margin-bottom:1.2rem;">LANGGRAPH AGENTIC PIPELINE</div>
+
+  <div class="pipeline-row">
+    <div class="pnode input">User Input</div>
+    <div class="parrow">&#8594;</div>
+    <div class="pnode">1. Validate</div>
+    <div class="parrow">&#8594;</div>
+    <div class="pnode ml">2. Predict <span style="color:#7f8699;font-weight:400;font-size:0.7rem;">ML</span></div>
+    <div class="parrow">&#8594;</div>
+    <div class="pnode rag">3. RAG Retrieve <span style="color:#7f8699;font-weight:400;font-size:0.7rem;">FAISS</span></div>
+    <div class="parrow">&#8594;</div>
+    <div class="pnode">4. Comparables</div>
+  </div>
+
+  <div class="pipeline-row" style="padding-left:2rem;">
+    <div class="pnode llm">5. Risk Assess <span style="color:#7f8699;font-weight:400;font-size:0.7rem;">LLM</span></div>
+    <div class="parrow">&#8594;</div>
+    <div class="pnode llm">6. Gen Advice <span style="color:#7f8699;font-weight:400;font-size:0.7rem;">LLM</span></div>
+    <div class="parrow">&#8594;</div>
+    <div class="pnode llm">7. Report <span style="color:#7f8699;font-weight:400;font-size:0.7rem;">LLM</span></div>
+    <div class="parrow">&#8594;</div>
+    <div class="pnode output">Output</div>
+  </div>
+
+  <hr class="pipeline-divider"/>
+
+  <div class="comp-grid">
+    <div class="comp-card">
+      <div class="comp-title" style="color:#6c63ff;">LangGraph</div>
+      <div class="comp-desc">StateGraph with 7 nodes — explicit state management</div>
+    </div>
+    <div class="comp-card">
+      <div class="comp-title" style="color:#f7b731;">Groq LLaMA 3.3 70B</div>
+      <div class="comp-desc">Risk analysis, investment advice, report generation</div>
+    </div>
+    <div class="comp-card">
+      <div class="comp-title" style="color:#38bdf8;">FAISS + SentenceTransformers</div>
+      <div class="comp-desc">Market knowledge RAG — no OpenAI needed</div>
+    </div>
+    <div class="comp-card">
+      <div class="comp-title" style="color:#00c9a7;">Scikit-learn ML</div>
+      <div class="comp-desc">Price prediction via Linear Regression</div>
+    </div>
+    <div class="comp-card">
+      <div class="comp-title" style="color:#a78bfa;">Streamlit</div>
+      <div class="comp-desc">Interactive web UI with live progress tracking</div>
+    </div>
+  </div>
+</div>
+""", unsafe_allow_html=True)
 
 #  Run the agent 
 if run_btn:
@@ -474,9 +636,20 @@ if "result" in st.session_state:
 
         c1, c2 = st.columns([1, 1])
         with c1:
-            st.markdown("#### Model Predictions Comparison")
-            st.plotly_chart(make_model_comparison_chart(pred), use_container_width=True)
+            st.markdown("#### Rent Factor Breakdown")
+            st.plotly_chart(make_rent_breakdown_chart(props, ens_rent), use_container_width=True)
         with c2:
+            st.markdown("#### Predicted vs City Average")
+            st.plotly_chart(make_predicted_vs_market_chart(ens_rent, props.get("city", "Delhi")), use_container_width=True)
+
+        c3, c4 = st.columns([1, 1])
+        with c3:
+            st.markdown("#### Rent per Sq Ft Efficiency")
+            st.plotly_chart(
+                make_rent_psf_gauge(ens_rent, props.get("size_sqft", 1000), props.get("city", "Delhi")),
+                use_container_width=True
+            )
+        with c4:
             st.markdown("#### Rental Yield vs City Average")
             st.plotly_chart(
                 make_yield_gauge(
