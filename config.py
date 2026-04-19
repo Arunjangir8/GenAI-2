@@ -4,9 +4,16 @@ config.py - Central configuration for the Real Estate Advisory Agent
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(override=True)
 
-GROQ_API_KEY   = os.getenv("GROQ_API_KEY", "your_groq_api_key_here")
+
+def _clean_env(name: str, default: str = "") -> str:
+    value = os.getenv(name, default)
+    if value is None:
+        return default
+    return str(value).strip().strip('"').strip("'")
+
+GROQ_API_KEY   = _clean_env("GROQ_API_KEY", "your_groq_api_key_here")
 GROQ_MODEL     = "llama-3.3-70b-versatile"
 GROQ_TEMP      = 0.2
 GROQ_MAX_TOKENS = 2048

@@ -194,6 +194,22 @@ def analyze_comparables(state: RealEstateState) -> RealEstateState:
         "step_logs": logs,
     }
 
+
+def _preview_text(text: str, limit: int = 1200) -> str:
+    clean = str(text or "").strip().replace("\n", " | ")
+    if len(clean) <= limit:
+        return clean
+    return clean[:limit] + " ...[truncated]"
+
+
+def _masked_api_key(key: str) -> str:
+    k = str(key or "").strip()
+    if not k:
+        return "<missing>"
+    if len(k) <= 10:
+        return k[0] + "***" + k[-1]
+    return f"{k[:4]}...{k[-4:]} (len={len(k)})"
+
 RISK_SYSTEM_PROMPT = """You are a senior real estate risk analyst specializing in Indian property markets (Delhi, Mumbai, Pune).
 Your role is to provide concise, factual risk assessments. Be specific, not generic.
 Avoid hallucination — base all claims on the provided market data.
@@ -247,6 +263,8 @@ Provide a concise risk assessment (3-4 bullet points) identifying key risks for 
         ])
         risk_text = response.content
         logs.append("  Risk assessment generated")
+        logs.append(f"  🧠 LLM Risk Response: {_preview_text(risk_text)}")
+        print("\n===== LLM RISK RESPONSE =====\n" + str(risk_text) + "\n=============================\n")
     except Exception as e:
         logs.append(f"  ⚠️ LLM error: {e}")
         risk_text = (
@@ -257,6 +275,8 @@ Provide a concise risk assessment (3-4 bullet points) identifying key risks for 
             f"• Liquidity Risk (High): Real estate illiquidity may affect exit strategy.\n"
             f"• Regulatory Risk (Low): RERA registration provides buyer protection."
         )
+        logs.append(f"  🧩 Fallback Risk Response: {_preview_text(risk_text)}")
+        print("\n===== FALLBACK RISK RESPONSE =====\n" + str(risk_text) + "\n==================================\n")
 
     return {
         **state,
@@ -344,6 +364,8 @@ Provide a structured investment recommendation following the format:
         ])
         advice = response.content
         logs.append("  Investment advice generated")
+        logs.append(f"  🧠 LLM Advice Response: {_preview_text(advice)}")
+        print("\n===== LLM ADVICE RESPONSE =====\n" + str(advice) + "\n===============================\n")
     except Exception as e:
         logs.append(f"  ⚠️ LLM error: {e}")
         yield_above = analytics.get("gross_yield_pct", 3.5) >= analytics.get("city_avg_yield", 3.5)
@@ -357,6 +379,8 @@ Provide a structured investment recommendation following the format:
             f"2. Negotiate rent to ₹{ens_rent*0.95:,.0f} (5% below estimate)\n"
             f"3. Insist on formal 11-month Leave & Licence agreement"
         )
+        logs.append(f"  🧩 Fallback Advice Response: {_preview_text(advice)}")
+        print("\n===== FALLBACK ADVICE RESPONSE =====\n" + str(advice) + "\n====================================\n")
 
     return {
         **state,
@@ -435,9 +459,13 @@ Include all data provided. Be concise and factual. Word limit: 600 words.
         ])
         report = response.content
         logs.append("  ✅ Report compiled successfully")
+        logs.append(f"  🧠 LLM Report Response: {_preview_text(report)}")
+        print("\n===== LLM REPORT RESPONSE =====\n" + str(report) + "\n===============================\n")
     except Exception as e:
         logs.append(f"  ⚠️ Report LLM error: {e}. Using template.")
         report = _template_report(props, prefs, pred, comps, risks, advice)
+        logs.append(f"  🧩 Fallback Report Response: {_preview_text(report)}")
+        print("\n===== FALLBACK REPORT RESPONSE =====\n" + str(report) + "\n====================================\n")
 
     return {
         **state,
