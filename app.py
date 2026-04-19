@@ -411,7 +411,7 @@ with st.sidebar:
     purpose   = st.selectbox("Purpose", ["investment", "self-use"])
     risk      = st.selectbox("Risk Appetite", ["low", "moderate", "high"], index=1)
     horizon   = st.selectbox("Investment Horizon", ["short", "medium", "long"], index=1)
-    budget    = st.slider("Budget (₹ Lakhs)", 20, 500, 60, step=5)
+    budget    = st.slider("Budget (₹ Thousands)", 20, 500, 60, step=5)
     exp_yield = st.slider("Expected Yield (%)", 2.0, 8.0, 4.0, step=0.5)
 
     st.divider()
