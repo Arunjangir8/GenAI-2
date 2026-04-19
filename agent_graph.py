@@ -525,6 +525,8 @@ def get_graph():
 
 def run_advisory(property_details: dict, user_preferences: dict) -> RealEstateState:
     """Entry point — run the full advisory pipeline."""
+    print("🤖 agent_graph.run_advisory started")
+
     initial_state: RealEstateState = {
         "property_details":  property_details,
         "user_preferences":  user_preferences,
@@ -542,4 +544,5 @@ def run_advisory(property_details: dict, user_preferences: dict) -> RealEstateSt
 
     graph  = get_graph()
     result = graph.invoke(initial_state)
+    print(f"✅ agent_graph completed ({len(result.get('step_logs', []))} step logs)")
     return result

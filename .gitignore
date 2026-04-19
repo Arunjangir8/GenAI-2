@@ -15,7 +15,6 @@ ENV/
 !.env.example
 
 # Model and vector index artifacts (generated)
-models/
 faiss_index/
 
 # Local runtime and logs

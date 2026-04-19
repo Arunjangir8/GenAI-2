@@ -1,15 +1,14 @@
-"""
-FAISS-based RAG for real estate market knowledge retrieval.
-Uses sentence-transformers for embeddings (no OpenAI key needed).
-"""
-
 import os
 import pickle
+import warnings
 import numpy as np
 from typing import List, Dict, Any
 
 from langchain_community.vectorstores import FAISS
-from langchain_community.embeddings import HuggingFaceEmbeddings
+try:
+    from langchain_huggingface import HuggingFaceEmbeddings
+except Exception:  # fallback for older environments
+    from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.schema import Document
 

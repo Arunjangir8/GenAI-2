@@ -2,6 +2,11 @@
 Run with:  streamlit run app.py
 """
 
+import os
+
+# Prevent Streamlit file watcher from introspecting torch classes (noisy runtime traces)
+os.environ.setdefault("STREAMLIT_SERVER_FILE_WATCHER_TYPE", "none")
+
 import streamlit as st
 import time
 import json
@@ -9,6 +14,11 @@ import plotly.graph_objects as go
 import plotly.express as px
 import pandas as pd
 import numpy as np
+import warnings
+from pathlib import Path
+
+# Suppress torch module inspection warnings
+warnings.filterwarnings('ignore', category=RuntimeWarning, message='.*torch.classes.*')
 
 st.set_page_config(
     page_title="RealAdvisor AI | Agentic Real Estate Intelligence",
@@ -127,11 +137,52 @@ CITY_COORDS = {
     "Pune":   {"lat": 18.5204, "lon": 73.8567},
 }
 
-CITY_LOCATIONS = {
+DEFAULT_CITY_LOCATIONS = {
     "Delhi":  ["Dwarka", "Rohini", "Saket", "Janakpuri", "Vasant Kunj", "Lajpat Nagar", "South Extension", "Karol Bagh"],
     "Mumbai": ["Andheri", "Powai", "Dadar", "Thane", "Malad", "Navi Mumbai", "Bandra", "Goregaon"],
     "Pune":   ["Hinjewadi", "Kharadi", "Kothrud", "Baner", "Wakad", "Hadapsar", "Viman Nagar", "Undri"],
 }
+
+
+def load_city_locations_from_raw() -> dict:
+    """Load city->locations from all CSVs in Raw folder."""
+    raw_dir = Path(__file__).resolve().parent / "Raw"
+    csv_files = sorted(raw_dir.glob("*.csv"))
+
+    if not csv_files:
+        return DEFAULT_CITY_LOCATIONS
+
+    all_frames = []
+    for csv_path in csv_files:
+        try:
+            df = pd.read_csv(csv_path, usecols=["city", "location"])
+            all_frames.append(df)
+        except Exception:
+            continue
+
+    if not all_frames:
+        return DEFAULT_CITY_LOCATIONS
+
+    merged = pd.concat(all_frames, ignore_index=True)
+    merged = merged.dropna(subset=["city", "location"]).copy()
+    merged["city"] = merged["city"].astype(str).str.strip()
+    merged["location"] = merged["location"].astype(str).str.strip()
+    merged = merged[(merged["city"] != "") & (merged["location"] != "")]
+
+    city_locations = {}
+    for city_name in VALID_CITIES:
+        city_locs = (
+            merged.loc[merged["city"].str.casefold() == city_name.casefold(), "location"]
+            .drop_duplicates()
+            .sort_values()
+            .tolist()
+        )
+        city_locations[city_name] = city_locs or DEFAULT_CITY_LOCATIONS.get(city_name, [])
+
+    return city_locations
+
+
+CITY_LOCATIONS = load_city_locations_from_raw()
 
 STEP_LABELS = [
     "Input Validation", "Price Prediction", "Market Data (RAG)",
