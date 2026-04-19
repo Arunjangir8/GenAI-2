@@ -70,7 +70,7 @@ h1, h2, h3 { font-family: 'Space Grotesk', sans-serif !important; }
 /* Metric tiles */
 .metric-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    grid-template-columns: repeat(2, 1fr);
     gap: 12px;
     margin: 1rem 0;
 }
@@ -427,115 +427,143 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Architecture diagram
-with st.expander("Agent Workflow Architecture", expanded=False):
+with st.expander("How it works", expanded=False):
     st.markdown("""
 <style>
-.pipeline-wrap {
-    background: #161922;
-    border: 1px solid #2a2f42;
-    border-radius: 14px;
-    padding: 2rem 2rem 1.5rem;
-    margin-top: 0.5rem;
+.hw-wrap { padding: 1.2rem 0 0.5rem; }
+.hw-label {
+    font-size: 0.68rem; font-weight: 700; letter-spacing: 2px;
+    color: #7f8699; text-transform: uppercase; margin-bottom: 1.4rem;
 }
-.pipeline-nodes {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 0;
-    margin-bottom: 1.5rem;
+.hw-flow {
+    display: flex; align-items: stretch;
+    flex-wrap: nowrap; gap: 6px; margin-bottom: 10px; overflow-x: auto;
 }
-.pnode {
-    background: #1e2230;
-    border: 1px solid #2a2f42;
-    border-radius: 8px;
-    padding: 8px 14px;
-    font-size: 0.78rem;
-    font-weight: 600;
-    color: #e4e6f0;
-    white-space: nowrap;
+.hw-node {
+    display: flex; flex-direction: column; align-items: flex-start;
+    justify-content: flex-start;
+    background: #1e2230; border-radius: 8px;
+    padding: 10px 14px; border-left: 3px solid #2a2f42;
+    width: 150px; min-width: 150px; max-width: 150px;
+    box-sizing: border-box;
 }
-.pnode.input  { border-color: #6c63ff; color: #a5b4fc; }
-.pnode.ml     { border-color: #00c9a7; color: #00c9a7; }
-.pnode.rag    { border-color: #38bdf8; color: #38bdf8; }
-.pnode.llm    { border-color: #f7b731; color: #f7b731; }
-.pnode.output { border-color: #00c9a7; background: #1a3d30; color: #00e5a0; }
-.parrow {
-    color: #2a2f42;
-    font-size: 1.1rem;
-    padding: 0 6px;
-    font-weight: 700;
+.hw-node .step-num {
+    font-size: 0.6rem; color: #7f8699;
+    margin-bottom: 4px; font-weight: 500;
+    display: none;
 }
-.pipeline-row {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 4px;
-    margin-bottom: 10px;
+.hw-node .step-name {
+    font-size: 0.8rem; font-weight: 700;
+    color: #e4e6f0; line-height: 1.3; flex: 1;
 }
-.pipeline-divider { border-color: #2a2f42; margin: 1rem 0; }
-.comp-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 10px;
+.hw-node .step-tag {
+    font-size: 0.6rem; margin-top: 6px; font-weight: 600;
+    padding: 2px 6px; border-radius: 4px; align-self: flex-start;
 }
-.comp-card {
-    background: #1e2230;
-    border: 1px solid #2a2f42;
-    border-radius: 8px;
-    padding: 10px 14px;
-    font-size: 0.78rem;
+.hw-node.c-input { border-left-color: #6c63ff; }
+.hw-node.c-ml    { border-left-color: #00c9a7; }
+.hw-node.c-rag   { border-left-color: #38bdf8; }
+.hw-node.c-comp  { border-left-color: #a78bfa; }
+.hw-node.c-llm   { border-left-color: #f7b731; }
+.hw-node.c-out   { border-left-color: #00c9a7; background: #162b22; }
+.tag-ml  { background: #0d2e28; color: #00c9a7; }
+.tag-rag { background: #0d1f2e; color: #38bdf8; }
+.tag-llm { background: #2e2200; color: #f7b731; }
+.hw-arrow {
+    color: #3a3f55; font-size: 1rem;
+    flex-shrink: 0; align-self: center;
 }
-.comp-card .comp-title { font-weight: 700; margin-bottom: 4px; }
-.comp-card .comp-desc  { color: #7f8699; }
+.hw-divider {
+    border: none; border-top: 1px solid #1e2230; margin: 1.4rem 0 1.2rem;
+}
+.hw-stack {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px;
+}
+.hw-tech {
+    padding: 10px 12px; border-radius: 8px;
+    background: #1e2230; border-top: 2px solid #2a2f42;
+}
+.hw-tech .t-name { font-size: 0.78rem; font-weight: 700; margin-bottom: 4px; }
+.hw-tech .t-desc { font-size: 0.7rem; color: #7f8699; line-height: 1.4; }
 </style>
 
-<div class="pipeline-wrap">
-  <div style="font-size:0.7rem;font-weight:700;letter-spacing:1.5px;color:#7f8699;margin-bottom:1.2rem;">LANGGRAPH AGENTIC PIPELINE</div>
+<div class="hw-wrap">
+  <div class="hw-label">LangGraph Agentic Pipeline</div>
 
-  <div class="pipeline-row">
-    <div class="pnode input">User Input</div>
-    <div class="parrow">&#8594;</div>
-    <div class="pnode">1. Validate</div>
-    <div class="parrow">&#8594;</div>
-    <div class="pnode ml">2. Predict <span style="color:#7f8699;font-weight:400;font-size:0.7rem;">ML</span></div>
-    <div class="parrow">&#8594;</div>
-    <div class="pnode rag">3. RAG Retrieve <span style="color:#7f8699;font-weight:400;font-size:0.7rem;">FAISS</span></div>
-    <div class="parrow">&#8594;</div>
-    <div class="pnode">4. Comparables</div>
+  <div class="hw-flow">
+    <div class="hw-node c-input">
+      <span class="step-num">start</span>
+      <span class="step-name">User Input</span>
+    </div>
+    <span class="hw-arrow">&#8594;</span>
+    <div class="hw-node">
+      <span class="step-num">step 1</span>
+      <span class="step-name">Validate</span>
+    </div>
+    <span class="hw-arrow">&#8594;</span>
+    <div class="hw-node c-ml">
+      <span class="step-num">step 2</span>
+      <span class="step-name">Predict</span>
+      <span class="step-tag tag-ml">ML model</span>
+    </div>
+    <span class="hw-arrow">&#8594;</span>
+    <div class="hw-node c-rag">
+      <span class="step-num">step 3</span>
+      <span class="step-name">RAG Retrieve</span>
+      <span class="step-tag tag-rag">FAISS</span>
+    </div>
+    <span class="hw-arrow">&#8594;</span>
+    <div class="hw-node c-comp">
+      <span class="step-num">step 4</span>
+      <span class="step-name">Comparables</span>
+    </div>
+    <span class="hw-arrow">&#8594;</span>
+    <div class="hw-node c-llm">
+      <span class="step-num">step 5</span>
+      <span class="step-name">Risk Assess</span>
+      <span class="step-tag tag-llm">LLM</span>
+    </div>
+    <span class="hw-arrow">&#8594;</span>
+    <div class="hw-node c-llm">
+      <span class="step-num">step 6</span>
+      <span class="step-name">Gen Advice</span>
+      <span class="step-tag tag-llm">LLM</span>
+    </div>
+    <span class="hw-arrow">&#8594;</span>
+    <div class="hw-node c-llm">
+      <span class="step-num">step 7</span>
+      <span class="step-name">Report</span>
+      <span class="step-tag tag-llm">LLM</span>
+    </div>
+    <span class="hw-arrow">&#8594;</span>
+    <div class="hw-node c-out">
+      <span class="step-num">done</span>
+      <span class="step-name" style="color:#00e5a0;">Output</span>
+    </div>
   </div>
 
-  <div class="pipeline-row" style="padding-left:2rem;">
-    <div class="pnode llm">5. Risk Assess <span style="color:#7f8699;font-weight:400;font-size:0.7rem;">LLM</span></div>
-    <div class="parrow">&#8594;</div>
-    <div class="pnode llm">6. Gen Advice <span style="color:#7f8699;font-weight:400;font-size:0.7rem;">LLM</span></div>
-    <div class="parrow">&#8594;</div>
-    <div class="pnode llm">7. Report <span style="color:#7f8699;font-weight:400;font-size:0.7rem;">LLM</span></div>
-    <div class="parrow">&#8594;</div>
-    <div class="pnode output">Output</div>
-  </div>
+  <hr class="hw-divider"/>
 
-  <hr class="pipeline-divider"/>
-
-  <div class="comp-grid">
-    <div class="comp-card">
-      <div class="comp-title" style="color:#6c63ff;">LangGraph</div>
-      <div class="comp-desc">StateGraph with 7 nodes — explicit state management</div>
+  <div class="hw-stack">
+    <div class="hw-tech" style="border-top-color:#6c63ff;">
+      <div class="t-name" style="color:#6c63ff;">LangGraph</div>
+      <div class="t-desc">StateGraph — 7 nodes, explicit state</div>
     </div>
-    <div class="comp-card">
-      <div class="comp-title" style="color:#f7b731;">Groq LLaMA 3.3 70B</div>
-      <div class="comp-desc">Risk analysis, investment advice, report generation</div>
+    <div class="hw-tech" style="border-top-color:#f7b731;">
+      <div class="t-name" style="color:#f7b731;">Groq LLaMA 3.3</div>
+      <div class="t-desc">Risk, advice &amp; report generation</div>
     </div>
-    <div class="comp-card">
-      <div class="comp-title" style="color:#38bdf8;">FAISS + SentenceTransformers</div>
-      <div class="comp-desc">Market knowledge RAG — no OpenAI needed</div>
+    <div class="hw-tech" style="border-top-color:#38bdf8;">
+      <div class="t-name" style="color:#38bdf8;">FAISS</div>
+      <div class="t-desc">Market knowledge RAG, local embeddings</div>
     </div>
-    <div class="comp-card">
-      <div class="comp-title" style="color:#00c9a7;">Scikit-learn ML</div>
-      <div class="comp-desc">Price prediction via Linear Regression</div>
+    <div class="hw-tech" style="border-top-color:#00c9a7;">
+      <div class="t-name" style="color:#00c9a7;">Scikit-learn</div>
+      <div class="t-desc">Linear Regression price prediction</div>
     </div>
-    <div class="comp-card">
-      <div class="comp-title" style="color:#a78bfa;">Streamlit</div>
-      <div class="comp-desc">Interactive web UI with live progress tracking</div>
+    <div class="hw-tech" style="border-top-color:#a78bfa;">
+      <div class="t-name" style="color:#a78bfa;">Streamlit</div>
+      <div class="t-desc">Web UI with live progress tracking</div>
     </div>
   </div>
 </div>
@@ -619,7 +647,6 @@ if "result" in st.session_state:
             f'<div class="rec-badge {rec_class}">{rec_label}</div>',
             unsafe_allow_html=True
         )
-        st.markdown('<div class="metric-grid">', unsafe_allow_html=True)
         tiles = [
             (format_inr(ens_rent),                             "Predicted Rent / Month"),
             (format_inr(an.get("annual_rent", ens_rent*12)),   "Annual Rental Income"),
@@ -628,9 +655,13 @@ if "result" in st.session_state:
             (f"{an.get('yoy_growth', '—')}%",                  "City YoY Growth"),
             (f"{an.get('vacancy_rate', '—')}%",                "Vacancy Rate"),
         ]
-        for val, lbl in tiles:
-            st.markdown(metric_tile(val, lbl), unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+        for i in range(0, len(tiles), 2):
+            cols = st.columns(2)
+            for j, col in enumerate(cols):
+                if i + j < len(tiles):
+                    v, l = tiles[i + j]
+                    col.markdown(metric_tile(v, l), unsafe_allow_html=True)
+            st.markdown('<div style="margin-bottom:12px;"></div>', unsafe_allow_html=True)
 
         st.divider()
 
