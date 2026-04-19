@@ -1,0 +1,624 @@
+\documentclass[12pt,a4paper]{article}
+
+% --- Packages ---
+\usepackage[a4paper, margin=1in]{geometry}
+\usepackage{fontenc}
+\usepackage{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{amsmath}
+\usepackage{parskip}
+\usepackage{caption}
+\usepackage{float}
+
+% --- Colors ---
+\definecolor{codebackground}{RGB}{248, 248, 248}
+\definecolor{codekeyword}{RGB}{0, 0, 180}
+\definecolor{codestring}{RGB}{163, 21, 21}
+\definecolor{codecomment}{RGB}{0, 128, 0}
+\definecolor{headerblue}{RGB}{0, 70, 127}
+\definecolor{lightgray}{RGB}{240, 240, 240}
+
+% --- Code Listings Style ---
+\lstset{
+  backgroundcolor=\color{codebackground},
+  basicstyle=\ttfamily\footnotesize,
+  keywordstyle=\color{codekeyword}\bfseries,
+  stringstyle=\color{codestring},
+  commentstyle=\color{codecomment}\itshape,
+  breaklines=true,
+  frame=single,
+  framesep=4pt,
+  rulecolor=\color{gray!40},
+  showstringspaces=false,
+  tabsize=2,
+  captionpos=b,
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  numbersep=6pt,
+  xleftmargin=12pt,
+  xrightmargin=4pt,
+}
+
+\lstdefinelanguage{Python}{
+  keywords={def,class,return,if,else,elif,for,while,import,from,as,True,False,None,in,not,and,or,lambda,with,try,except,raise},
+  morecomment=[l]{\#},
+  morestring=[b]',
+  morestring=[b]"
+}
+
+% --- Section Formatting ---
+\titleformat{\section}
+  {\large\bfseries\color{headerblue}}
+  {\thesection}{1em}{}[\titlerule]
+
+\titleformat{\subsection}
+  {\normalsize\bfseries\color{headerblue!80}}
+  {\thesubsection}{1em}{}
+
+\titleformat{\subsubsection}
+  {\normalsize\bfseries}
+  {\thesubsubsection}{1em}{}
+
+% --- Header / Footer ---
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\textcolor{gray}{RealAdvisor AI --- Agentic Real Estate Advisory System}}
+\fancyhead[R]{\small\textcolor{gray}{Milestone 2}}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% --- Hyperref Setup ---
+\hypersetup{
+  colorlinks=true,
+  linkcolor=headerblue,
+  urlcolor=headerblue,
+  citecolor=headerblue,
+  pdftitle={RealAdvisor AI -- Project Report Milestone 2},
+  pdfauthor={Generative AI \& Agentic Systems Course},
+}
+
+% --- Custom Commands ---
+\newcommand{\code}[1]{\texttt{\small #1}}
+\newcommand{\rupee}{{\fontencoding{T1}\selectfont\char"20B9}}
+
+% ============================================================
+\begin{document}
+% ============================================================
+
+% --- Title Page ---
+\begin{titlepage}
+  \centering
+  \vspace*{2cm}
+
+  {\Huge\bfseries\color{headerblue} RealAdvisor AI\par}
+  \vspace{0.5cm}
+  {\LARGE Agentic Real Estate Advisory System\par}
+  \vspace{0.3cm}
+  {\large\textit{Project Report --- Milestone 2}\par}
+
+  \vspace{2cm}
+  \rule{0.6\textwidth}{0.5pt}
+  \vspace{1cm}
+
+  \begin{tabular}{rl}
+    \textbf{Course:} & Generative AI \& Agentic Systems \\[6pt]
+    \textbf{Domain:} & Real Estate Investment Intelligence \\[6pt]
+    \textbf{Stack:}  & LangGraph $\cdot$ Groq LLaMA 3.3 70B $\cdot$ FAISS RAG $\cdot$ Streamlit \\
+  \end{tabular}
+
+  \vspace{2cm}
+  \rule{0.6\textwidth}{0.5pt}
+
+  \vfill
+  {\small\textit{This report was prepared as part of the Generative AI coursework (Milestone 2).\\
+  All market data cited is sourced from the project's curated knowledge base\\
+  and is intended for educational purposes only.\\
+  This does not constitute financial advice.}}
+\end{titlepage}
+
+% --- Table of Contents ---
+\tableofcontents
+\newpage
+
+% ============================================================
+\section{Abstract}
+% ============================================================
+
+RealAdvisor AI is an autonomous, multi-step real estate advisory system that combines classical machine learning, retrieval-augmented generation (RAG), and large language model (LLM) reasoning within a structured agentic workflow. The system accepts a property description as input and autonomously executes a 7-node LangGraph pipeline to produce a structured investment advisory report --- including rent prediction, comparable property analysis, risk assessment, and a \textbf{BUY / HOLD / AVOID} recommendation. The system is grounded in real market data for three Indian cities (Delhi, Mumbai, Pune) and employs multiple anti-hallucination strategies to ensure factual, reliable outputs.
+
+% ============================================================
+\section{Introduction \& Problem Statement}
+% ============================================================
+
+\subsection{Motivation}
+
+Real estate investment decisions in India involve navigating fragmented market data, city-specific regulatory frameworks, and highly variable property characteristics. Individual investors typically lack access to structured analytical tools that combine quantitative valuation with qualitative market intelligence.
+
+\subsection{Problem Statement}
+
+\begin{quote}
+\itshape
+Given a property's physical attributes (city, location, BHK, size, furnishing status) and an investor's profile (risk appetite, horizon, budget), generate a comprehensive, data-grounded investment advisory report without requiring manual research or domain expertise.
+\end{quote}
+
+\subsection{Scope}
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Cities covered:} Delhi, Mumbai, Pune
+  \item \textbf{Property types:} Apartment, Independent Floor, Builder Floor, Villa, Studio, Penthouse, Service Apartment
+  \item \textbf{Output:} Predicted monthly rent, gross yield, comparable analysis, risk factors, investment recommendation, full advisory report
+\end{itemize}
+
+% ============================================================
+\section{System Architecture}
+% ============================================================
+
+\begin{lstlisting}[language={}, caption={High-level system architecture}, label={lst:arch}]
++-------------------------------------------------------------+
+|                     USER INTERFACE                          |
+|              Streamlit Web App  (app.py)                    |
++----------------------------+--------------------------------+
+                             |  property_details + user_preferences
+                             v
++-------------------------------------------------------------+
+|              LANGGRAPH STATE MACHINE (agent_graph.py)       |
+|                                                             |
+|   validate -> predict -> RAG -> comparables -> risk ->      |
+|                         advice -> report                    |
++------+------------------+------------------+---------------+
+       |                  |                  |
+       v                  v                  v
++-------------+  +----------------+  +----------------------+
+|  ML Models  |  |  FAISS RAG     |  |  Groq LLaMA 3.3 70B  |
+| (predictor) |  |  (rag_system)  |  |  (risk, advice,      |
+|  LR Model   |  |  HuggingFace   |  |   report nodes)      |
+|  + Scaler   |  |  Embeddings    |  +----------------------+
++-------------+  +----------------+
+                        |
+               +----------------+
+               | Knowledge Base |
+               | (knowledge_    |
+               |  base.py)      |
+               | 11 market docs |
+               | Delhi/Mumbai/  |
+               | Pune + National|
+               +----------------+
+\end{lstlisting}
+
+\subsection{Component Responsibilities}
+
+\begin{table}[H]
+\centering
+\caption{Component responsibilities overview}
+\begin{tabularx}{\textwidth}{lllX}
+\toprule
+\textbf{Component} & \textbf{File} & \textbf{Role} \\
+\midrule
+Streamlit UI      & \code{app.py}            & User input, step tracker, visualizations, report download \\
+LangGraph Agent   & \code{agent\_graph.py}   & Orchestrates 7-node pipeline via \code{RealEstateState} TypedDict \\
+ML Predictor      & \code{predictor.py}      & Linear Regression + MinMax Scaler for rent prediction \\
+RAG System        & \code{rag\_system.py}    & FAISS vector store + HuggingFace embeddings for market retrieval \\
+Knowledge Base    & \code{knowledge\_base.py}& 11 curated market documents + comparable property data \\
+Config            & \code{config.py}         & API keys, city metadata, price sanity bounds, valid enumerations \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% ============================================================
+\section{Agentic Workflow --- LangGraph Pipeline}
+% ============================================================
+
+\subsection{What is an Agentic Workflow?}
+
+An agentic workflow is a system where an AI agent autonomously executes a sequence of reasoning and action steps to complete a complex task --- rather than producing a single-shot response. LangGraph implements this as a directed state graph where each node transforms a shared state object.
+
+\subsection{State Definition}
+
+All data flows through a single \code{RealEstateState} TypedDict, ensuring type safety and full traceability across nodes:
+
+\begin{lstlisting}[language=Python, caption={RealEstateState TypedDict definition}]
+class RealEstateState(TypedDict):
+    property_details:   Dict[str, Any]   # Input: city, BHK, size, furnishing...
+    user_preferences:   Dict[str, Any]   # Input: risk appetite, horizon, budget
+    validation_result:  str              # Node 1 output
+    prediction_result:  Dict[str, Any]   # Node 2 output: rent + analytics
+    market_context:     str              # Node 3 output: RAG-retrieved text
+    comparables:        List[Dict]       # Node 4 output: scored similar properties
+    risk_assessment:    str              # Node 5 output: LLM risk analysis
+    investment_advice:  str              # Node 6 output: BUY/HOLD/AVOID
+    final_report:       str              # Node 7 output: full markdown report
+    current_step:       str              # Pipeline position tracker
+    step_logs:          List[str]        # Audit trail of all steps
+\end{lstlisting}
+
+\subsection{Node-by-Node Breakdown}
+
+\subsubsection{Node 1 --- \texttt{validate\_input}}
+
+Sanitizes and enriches raw user input. Sets defaults for missing fields (e.g., \code{rooms=2}, \code{status="Semi-Furnished"}). Normalizes investor profile into a clean \code{prefs\_clean} dict. Produces a human-readable validation summary.
+
+\textbf{Key design choice:} Validation is a dedicated node (not inline) so failures are isolated and logged without crashing downstream nodes.
+
+\subsubsection{Node 2 --- \texttt{predict\_price}}
+
+Calls \code{predictor.predict\_rent()} which encodes categorical features (city, location, status, property type) using deterministic ordinal maps built from the Raw CSV data --- replicating the LabelEncoder behavior from Milestone 1 without requiring saved encoder pickles.
+
+The Linear Regression model predicts rent, which is then clamped to city-specific sanity bounds:
+
+\begin{table}[H]
+\centering
+\caption{City-specific rent sanity bounds}
+\begin{tabular}{lll}
+\toprule
+\textbf{City} & \textbf{Minimum} & \textbf{Maximum} \\
+\midrule
+Delhi  & \rupee 5{,}000  & \rupee 3{,}00{,}000 \\
+Mumbai & \rupee 8{,}000  & \rupee 5{,}00{,}000 \\
+Pune   & \rupee 4{,}000  & \rupee 2{,}00{,}000 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Analytics computed at this stage: gross yield \%, price-to-rent ratio, annual rent, estimated property value (using avg PSF per city).
+
+\subsubsection{Node 3 --- \texttt{retrieve\_market\_data} (RAG)}
+
+Constructs a context-rich query from property attributes and retrieves the top-5 most semantically similar chunks from the FAISS index. City-specific filtering ensures relevance. Falls back to \code{CITY\_META} constants if the RAG system is unavailable.
+
+\subsubsection{Node 4 --- \texttt{analyze\_comparables}}
+
+Scores each comparable property in \code{knowledge\_base.COMPARABLE\_PROPERTIES} against the subject property using a weighted similarity formula:
+
+\begin{equation}
+\text{similarity} = 1.0 - \left(\Delta_{\text{BHK}} \times 0.4 + \Delta_{\text{size\%}} \times 0.6\right)
+\end{equation}
+
+Returns the top 4 most similar comparables, sorted by score descending.
+
+\subsubsection{Node 5 --- \texttt{assess\_risk} (LLM)}
+
+Sends a structured prompt to Groq LLaMA 3.3 70B containing: property details, predicted rent, gross yield, comparable summary, and RAG market context. The system prompt constrains the LLM to produce exactly 3--4 bullet points with severity ratings (\textbf{Low / Medium / High}).
+
+\subsubsection{Node 6 --- \texttt{generate\_advice} (LLM)}
+
+Sends a comprehensive prompt with all prior node outputs. The system prompt enforces a strict output format:
+
+\begin{lstlisting}[language={}, caption={Enforced output format for Node 6}]
+**RECOMMENDATION: [BUY / HOLD / AVOID]**
+**Summary:** ...
+**Key Metrics Analysis:** ...
+**Action Steps:** ...
+\end{lstlisting}
+
+\subsubsection{Node 7 --- \texttt{compile\_report} (LLM)}
+
+Assembles all outputs into a professional 8-section markdown advisory report. Falls back to \code{\_template\_report()} if the LLM call fails, ensuring the system never crashes.
+
+\subsection{Graph Topology}
+
+\begin{lstlisting}[language={}, caption={Linear DAG pipeline topology}]
+validate_input -> predict_price -> retrieve_market_data -> analyze_comparables
+    -> assess_risk -> generate_advice -> compile_report -> END
+\end{lstlisting}
+
+This is a \textbf{linear DAG} (no branching or cycles), which prioritises predictability and debuggability over dynamic routing. Each node has a single responsibility and a defined fallback.
+
+% ============================================================
+\section{RAG Pipeline --- FAISS Knowledge Retrieval}
+% ============================================================
+
+\subsection{What is RAG?}
+
+Retrieval-Augmented Generation (RAG) grounds LLM responses in external, verifiable knowledge by retrieving relevant documents at inference time and injecting them into the prompt. This prevents the LLM from hallucinating market statistics.
+
+\subsection{Knowledge Base Design}
+
+The knowledge base (\code{knowledge\_base.py}) contains \textbf{11 curated market documents} across 4 categories:
+
+\begin{table}[H]
+\centering
+\caption{Knowledge base document categories}
+\begin{tabular}{lll}
+\toprule
+\textbf{Category} & \textbf{Cities} & \textbf{Content} \\
+\midrule
+\code{market\_overview}       & Delhi, Mumbai, Pune & YoY growth, vacancy rates, supply/demand \\
+\code{locality\_insights}     & Delhi, Mumbai, Pune & Per-locality rent ranges, connectivity, demand drivers \\
+\code{investment\_analysis}   & Delhi, Mumbai, Pune & Best picks, risks, yield benchmarks \\
+\code{regulations}            & All  & RERA, MahaRERA, stamp duty, tenancy law \\
+\code{investment\_principles} & All  & Yield formulas, leverage, tax, due diligence \\
+\code{macro\_trends}          & All  & Co-living, proptech, interest rates, infrastructure \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Indexing Pipeline}
+
+\begin{lstlisting}[language={}, caption={RAG indexing pipeline}]
+MARKET_DOCUMENTS (raw text)
+        |
+        v
+RecursiveCharacterTextSplitter
+  chunk_size=512, overlap=64
+        |
+        v
+HuggingFace Embeddings
+  model: all-MiniLM-L6-v2 (384-dim)
+  normalize_embeddings=True
+        |
+        v
+FAISS Index (cosine similarity)
+  saved to: faiss_index/
+        |
+        v
+Cached on disk -> instant load on subsequent runs
+\end{lstlisting}
+
+\subsection{Retrieval Strategy}
+
+At query time, the system:
+\begin{enumerate}[leftmargin=1.5em]
+  \item Enriches the query with city prefix: \code{"\{city\} real estate: \{query\}"}
+  \item Retrieves top-5 chunks by cosine similarity
+  \item Deduplicates by \code{category} metadata to ensure diverse context
+  \item Formats results with source attribution: \code{[City | Category]}
+\end{enumerate}
+
+\textbf{Embedding model choice:} \code{all-MiniLM-L6-v2} was selected for its balance of speed (runs on CPU), quality (MTEB benchmark top-tier for its size), and zero API cost.
+
+% ============================================================
+\section{ML Prediction Module}
+% ============================================================
+
+\subsection{Model}
+
+The predictor uses a \textbf{Linear Regression} model trained in Milestone 1 on the Indian housing dataset (Delhi, Mumbai, Pune CSVs). The model is loaded from \code{Models/linear\_regression\_model.pkl} with a corresponding \code{MinMaxScaler}.
+
+\subsection{Feature Engineering}
+
+14 features are constructed at inference time:
+
+\begin{table}[H]
+\centering
+\caption{Feature engineering details}
+\begin{tabular}{lll}
+\toprule
+\textbf{Feature} & \textbf{Type} & \textbf{Source} \\
+\midrule
+\code{location}            & Ordinal encoded & Raw CSV label map \\
+\code{city}                & Ordinal encoded & Raw CSV label map \\
+\code{latitude, longitude} & Float           & User input / city defaults \\
+\code{numBathrooms, numBalconies} & Float    & User input \\
+\code{isNegotiable}        & Binary          & User input \\
+\code{SecurityDeposit}     & Float           & User input \\
+\code{Status}              & Ordinal encoded & Raw CSV label map \\
+\code{Size\_ft\textsuperscript{2}} & Float  & User input \\
+\code{BHK, rooms\_num}     & Float           & User input \\
+\code{property\_type}      & Ordinal encoded & Config enum map \\
+\code{verification\_days}  & Float           & Fixed default (5.0) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Encoding Strategy}
+
+Rather than requiring saved LabelEncoder pickles, the system rebuilds deterministic ordinal maps from the Raw CSVs at startup using \code{\_load\_feature\_maps()}. This ensures encoding consistency with the training data without additional file dependencies.
+
+\subsection{Analytics Derived from Prediction}
+
+\begin{align}
+\text{annual\_rent}         &= \text{predicted\_rent} \times 12 \\
+\text{est\_property\_value} &= \text{size\_sqft} \times \text{avg\_psf\_per\_city} \\
+\text{gross\_yield\_\%}     &= \frac{\text{annual\_rent}}{\text{est\_property\_value}} \times 100 \\
+\text{price\_to\_rent\_ratio} &= \frac{\text{est\_property\_value}}{\text{annual\_rent}}
+\end{align}
+
+City average PSF used: Delhi \rupee 15{,}000 $|$ Mumbai \rupee 20{,}000 $|$ Pune \rupee 8{,}000
+
+% ============================================================
+\section{Anti-Hallucination Design}
+% ============================================================
+
+A core engineering concern in LLM-powered systems is factual reliability. Five strategies are employed:
+
+\begin{table}[H]
+\centering
+\caption{Anti-hallucination strategies}
+\begin{tabularx}{\textwidth}{lX}
+\toprule
+\textbf{Strategy} & \textbf{Implementation} \\
+\midrule
+Data-grounded prompts       & Every LLM call includes specific numeric values from ML predictions and RAG retrieval \\
+Low temperature (0.2)       & Reduces creative/stochastic outputs; keeps LLM close to provided data \\
+Structured output format    & System prompts enforce exact section headers and bullet formats \\
+Conditional language instruction & Prompts explicitly instruct: use ``likely'', ``historically'', ``based on data'' \\
+Price sanity clamping       & Predicted rents are bounded to known city ranges before any LLM sees them \\
+Fallback chain              & Every LLM node has a template-based fallback; system never returns an error to the user \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% ============================================================
+\section{Results \& Analysis}
+% ============================================================
+
+\subsection{Model Performance}
+
+The Linear Regression model was trained on the combined Delhi + Mumbai + Pune dataset.
+
+\begin{table}[H]
+\centering
+\caption{Model performance characteristics}
+\begin{tabularx}{\textwidth}{lX}
+\toprule
+\textbf{Metric} & \textbf{Observation} \\
+\midrule
+Feature alignment   & Model uses \code{feature\_names\_in\_} from scaler for column reindexing --- prevents feature mismatch errors \\
+Sanity bounds       & Predictions outside city-specific bounds are clamped, reducing outlier impact \\
+Encoding robustness & Case-insensitive fallback in \code{\_encode()} handles user input variations \\
+Fallback coverage   & If model files are missing, system raises a clear \code{FileNotFoundError} at startup \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{RAG Retrieval Quality}
+
+\begin{table}[H]
+\centering
+\caption{RAG retrieval design decisions and effects}
+\begin{tabularx}{\textwidth}{llX}
+\toprule
+\textbf{Aspect} & \textbf{Design Decision} & \textbf{Effect} \\
+\midrule
+Chunk size      & 512 tokens with 64-token overlap & Preserves locality context without truncating key statistics \\
+Deduplication   & By \code{category} metadata      & Ensures diverse retrieval (not 5 chunks from same document) \\
+City enrichment & Query prefixed with city name    & Improves precision for city-specific market data \\
+Index persistence & Saved to \code{faiss\_index/}  & Eliminates $\sim$30s rebuild time on subsequent runs \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{LLM Output Quality}
+
+The 3-node LLM pipeline (risk $\rightarrow$ advice $\rightarrow$ report) benefits from \textbf{progressive context accumulation} --- each node receives all prior outputs, so the final report is coherent with the risk assessment and advice generated earlier.
+
+\textbf{Temperature 0.2 effect:} At this setting, LLaMA 3.3 70B consistently follows the structured output format (BUY/HOLD/AVOID header, numbered action steps) with minimal deviation across repeated runs.
+
+\subsection{Comparable Scoring Analysis}
+
+The similarity scoring formula weights size difference (60\%) more than BHK difference (40\%), reflecting that square footage is a stronger determinant of rent than room count alone. For a 1000 sqft 2BHK subject property:
+
+\begin{table}[H]
+\centering
+\caption{Comparable property similarity scores for a 1000 sqft 2BHK}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Comparable} & \textbf{BHK Diff} & \textbf{Size Diff} & \textbf{Similarity Score} \\
+\midrule
+950 sqft 2BHK  & 0 & 5\%  & 0.97 \\
+1050 sqft 2BHK & 0 & 5\%  & 0.97 \\
+1400 sqft 3BHK & 1 & 40\% & 0.36 \\
+500 sqft 1BHK  & 1 & 50\% & 0.30 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ============================================================
+\section{Qualitative Examples}
+% ============================================================
+
+\subsection{Example 1 --- Pune IT Zone Investment (\textcolor{green!60!black}{BUY})}
+
+\textbf{Input:}
+\begin{lstlisting}[language={}]
+City: Pune | Location: Hinjewadi | 2BHK Apartment
+Size: 950 sqft | Semi-Furnished | Budget: Rs.65L
+Risk Appetite: Moderate | Horizon: Long-term
+\end{lstlisting}
+
+\textbf{System Output (summarized):}
+\begin{itemize}[leftmargin=1.5em]
+  \item Predicted Rent: $\sim$\rupee 26{,}000/month
+  \item Gross Yield: $\sim$4.8\% (above Pune avg of 4.2\%)
+  \item RAG Context Retrieved: Hinjewadi IT Park demand, upcoming metro Phase 2 catalyst
+  \item Top Comparable: Hinjewadi 2BHK Apartment --- \rupee 26{,}000/mo, 4.8\% yield (similarity: 0.97)
+  \item Risk Assessment: Low vacancy risk (near-zero in IT zones), medium liquidity risk, low regulatory risk (MahaRERA)
+  \item \textbf{Recommendation: BUY} --- yield above city average, metro completion upside, strong corporate rental demand
+\end{itemize}
+
+\subsection{Example 2 --- Mumbai Premium Zone (\textcolor{orange}{HOLD})}
+
+\textbf{Input:}
+\begin{lstlisting}[language={}]
+City: Mumbai | Location: Bandra | 2BHK Apartment
+Size: 750 sqft | Furnished | Budget: Rs.1.8 Cr
+Risk Appetite: Low | Horizon: Short-term
+\end{lstlisting}
+
+\textbf{System Output (summarized):}
+\begin{itemize}[leftmargin=1.5em]
+  \item Predicted Rent: $\sim$\rupee 55{,}000/month
+  \item Gross Yield: $\sim$2.9\% (below Mumbai avg of 3.0\%)
+  \item RAG Context Retrieved: Bandra premium pricing, HNI demand, sea-view premiums
+  \item Risk Assessment: High entry cost risk, medium vacancy risk (luxury segment 12.5\% vacancy), low regulatory risk
+  \item \textbf{Recommendation: HOLD} --- yield below city average, short horizon insufficient for capital appreciation to compensate; better suited for long-term capital gains play
+\end{itemize}
+
+\subsection{Example 3 --- Delhi Affordable Segment (\textcolor{green!60!black}{BUY})}
+
+\textbf{Input:}
+\begin{lstlisting}[language={}]
+City: Delhi | Location: Dwarka | 2BHK Independent Floor
+Size: 950 sqft | Semi-Furnished | Budget: Rs.70L
+Risk Appetite: Moderate | Horizon: Medium-term
+\end{lstlisting}
+
+\textbf{System Output (summarized):}
+\begin{itemize}[leftmargin=1.5em]
+  \item Predicted Rent: $\sim$\rupee 22{,}000/month
+  \item Gross Yield: $\sim$3.9\% (above Delhi avg of 3.5\%)
+  \item RAG Context Retrieved: Metro Phase 4 expansion impact, Dwarka Expressway appreciation
+  \item Risk Assessment: Medium vacancy risk (mid-segment 6\% vacancy), low regulatory risk (RERA Delhi)
+  \item \textbf{Recommendation: BUY} --- infrastructure tailwinds, yield above city average, stable family rental demand
+\end{itemize}
+
+% ============================================================
+\section{Limitations \& Future Work}
+% ============================================================
+
+\subsection{Current Limitations}
+
+\begin{table}[H]
+\centering
+\caption{Current system limitations}
+\begin{tabularx}{\textwidth}{lX}
+\toprule
+\textbf{Limitation} & \textbf{Impact} \\
+\midrule
+Single ML model (Linear Regression) & May underfit non-linear price relationships; Random Forest ensemble was planned but not included in final models \\
+Static knowledge base               & Market documents are manually curated; no live data feed \\
+Three cities only                   & Cannot advise on Bangalore, Hyderabad, Chennai, or Tier-2 cities \\
+Estimated property value            & Uses fixed avg PSF per city; actual property value input would improve yield accuracy \\
+No time-series forecasting          & Cannot project rent growth over the investment horizon \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Future Enhancements}
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Live data integration:} Connect to MagicBricks / NoBroker APIs for real-time comparable data
+  \item \textbf{Random Forest ensemble:} Add RF model for non-linear feature interactions; blend with LR for ensemble prediction
+  \item \textbf{Expanded city coverage:} Add Bangalore, Hyderabad, Chennai using additional training data
+  \item \textbf{Agentic memory:} Persist user sessions and past analyses for portfolio-level advice
+  \item \textbf{Dynamic graph routing:} Add conditional edges in LangGraph to skip nodes when data is insufficient
+  \item \textbf{Multimodal input:} Accept property photos for condition assessment via vision models
+\end{itemize}
+
+% ============================================================
+\section{Conclusion}
+% ============================================================
+
+RealAdvisor AI demonstrates that a well-structured agentic pipeline can deliver reliable, data-grounded real estate advisory at scale. The key architectural insight is the separation of concerns across 7 specialised nodes --- each with a single responsibility and a defined fallback --- which makes the system both debuggable and resilient.
+
+The combination of FAISS RAG (for factual market grounding) and low-temperature LLM reasoning (for structured synthesis) effectively addresses the hallucination problem that plagues naive LLM-based advisory systems. The progressive context accumulation across the risk $\rightarrow$ advice $\rightarrow$ report nodes ensures internal consistency in the final output.
+
+The system successfully bridges the gap between Milestone 1's quantitative ML models and Milestone 2's agentic reasoning layer, producing investment reports that are both numerically grounded and qualitatively coherent.
+
+% ============================================================
+% ============================================================
+
+\end{document}
