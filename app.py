@@ -594,25 +594,32 @@ if run_btn:
         "expected_yield_pct": exp_yield,
     }
 
-    #  Live progress 
+    NODE_STEP_MAP = {
+        "validate_input":       (1, "Validating property input..."),
+        "predict_price":        (2, "Running ML price prediction..."),
+        "retrieve_market_data": (3, "Retrieving market data (RAG)..."),
+        "analyze_comparables":  (4, "Analyzing comparable properties..."),
+        "assess_risk":          (5, "Assessing investment risks..."),
+        "generate_advice":      (6, "Generating investment advice..."),
+        "compile_report":       (7, "Compiling advisory report..."),
+    }
+
+    #  Live progress
     progress_placeholder = st.empty()
     step_placeholder     = st.empty()
 
-    steps_done = 0
-    progress_bar = progress_placeholder.progress(0, text="Initializing advisory pipeline...")
+    progress_placeholder.progress(0, text="Initializing advisory pipeline...")
+    step_placeholder.markdown(step_tracker_html(-1), unsafe_allow_html=True)
 
-    def update_progress(step_idx: int, label: str):
+    from agent_graph import stream_advisory
+
+    result = None
+    for node_name, state in stream_advisory(property_details, user_preferences):
+        step_idx, label = NODE_STEP_MAP.get(node_name, (1, node_name))
         pct = int((step_idx / len(STEP_LABELS)) * 100)
         progress_placeholder.progress(pct, text=f"Step {step_idx}/{len(STEP_LABELS)}: {label}")
         step_placeholder.markdown(step_tracker_html(step_idx - 1), unsafe_allow_html=True)
-
-    update_progress(1, "Validating property input...")
-
-    from agent_graph import run_advisory
-
-    # Stream step updates while running
-    with st.spinner(""):
-        result = run_advisory(property_details, user_preferences)
+        result = state
 
     progress_placeholder.progress(100, text="Analysis complete!")
     step_placeholder.markdown(step_tracker_html(len(STEP_LABELS)), unsafe_allow_html=True)

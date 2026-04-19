@@ -574,3 +574,28 @@ def run_advisory(property_details: dict, user_preferences: dict) -> RealEstateSt
     result = graph.invoke(initial_state)
     print(f"✅ agent_graph completed ({len(result.get('step_logs', []))} step logs)")
     return result
+
+
+def stream_advisory(property_details: dict, user_preferences: dict):
+    """Stream advisory pipeline — yields (node_name, state) after each node."""
+    initial_state: RealEstateState = {
+        "property_details":  property_details,
+        "user_preferences":  user_preferences,
+        "validation_result": "",
+        "prediction_result": {},
+        "market_context":    "",
+        "comparables":       [],
+        "risk_assessment":   "",
+        "investment_advice": "",
+        "final_report":      "",
+        "current_step":      "validate_input",
+        "error":             None,
+        "step_logs":         [],
+    }
+    graph = get_graph()
+    final_state = initial_state
+    for step_output in graph.stream(initial_state):
+        node_name  = list(step_output.keys())[0]
+        final_state = step_output[node_name]
+        yield node_name, final_state
+    return final_state
