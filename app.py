@@ -22,7 +22,7 @@ warnings.filterwarnings('ignore', category=RuntimeWarning, message='.*torch.clas
 
 st.set_page_config(
     page_title="RealAdvisor AI | Agentic Real Estate Intelligence",
-    page_icon="🏙️",
+    page_icon="R",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -194,9 +194,9 @@ def step_tracker_html(current_step_idx: int) -> str:
     badges = ""
     for i, label in enumerate(STEP_LABELS):
         if i < current_step_idx:
-            badges += f'<div class="step-badge done">✓ {label}</div>'
+            badges += f'<div class="step-badge done">{label}</div>'
         elif i == current_step_idx:
-            badges += f'<div class="step-badge active">⟳ {label}</div>'
+            badges += f'<div class="step-badge active">{label}</div>'
         else:
             badges += f'<div class="step-badge">{label}</div>'
     return f'<div class="step-tracker">{badges}</div>'
@@ -297,11 +297,11 @@ def make_model_comparison_chart(pred):
 
 
 with st.sidebar:
-    st.markdown("## 🏙️ **RealAdvisor AI**")
+    st.markdown("## RealAdvisor AI")
     st.markdown('<p style="color:#7f8699;font-size:0.82rem;margin-top:-10px;">Agentic Real Estate Intelligence</p>', unsafe_allow_html=True)
     st.divider()
 
-    st.markdown("### 🏠 Property Details")
+    st.markdown("### Property Details")
 
     city = st.selectbox("City", VALID_CITIES, index=0)
 
@@ -330,7 +330,7 @@ with st.sidebar:
         is_negotiable = st.checkbox("Negotiable", value=False)
 
     st.divider()
-    st.markdown("### 👤 Investor Profile")
+    st.markdown("### Investor Profile")
 
     purpose   = st.selectbox("Purpose", ["investment", "self-use"])
     risk      = st.selectbox("Risk Appetite", ["low", "moderate", "high"], index=1)
@@ -339,7 +339,7 @@ with st.sidebar:
     exp_yield = st.slider("Expected Yield (%)", 2.0, 8.0, 4.0, step=0.5)
 
     st.divider()
-    run_btn = st.button("🚀 Run Advisory Analysis")
+    run_btn = st.button("Run Advisory Analysis")
 
 
 # Header
@@ -351,7 +351,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Architecture diagram
-with st.expander("📐 Agent Workflow Architecture", expanded=False):
+with st.expander("Agent Workflow Architecture", expanded=False):
     st.markdown("""
     ```
     ┌─────────────────────────────────────────────────────────────────────┐
@@ -424,7 +424,7 @@ if run_btn:
     with st.spinner(""):
         result = run_advisory(property_details, user_preferences)
 
-    progress_placeholder.progress(100, text="✅ Analysis complete!")
+    progress_placeholder.progress(100, text="Analysis complete!")
     step_placeholder.markdown(step_tracker_html(len(STEP_LABELS)), unsafe_allow_html=True)
     time.sleep(0.5)
     progress_placeholder.empty()
@@ -449,12 +449,12 @@ if "result" in st.session_state:
     rec_class, rec_label = get_rec_class(advice)
 
     tab1, tab2, tab3, tab4, tab5 = st.tabs([
-        "📊 Overview", "🏘️ Comparables", "⚠️ Risk & Advice", "📄 Full Report", "🔍 Agent Logs"
+        "Overview", "Comparables", "Risk & Advice", "Full Report", "Agent Logs"
     ])
 
     with tab1:
         st.markdown(
-            f'<div class="rec-badge {rec_class}">🎯 {rec_label}</div>',
+            f'<div class="rec-badge {rec_class}">{rec_label}</div>',
             unsafe_allow_html=True
         )
         st.markdown('<div class="metric-grid">', unsafe_allow_html=True)
@@ -488,7 +488,7 @@ if "result" in st.session_state:
 
         st.markdown(f"""
         <div class="card card-accent">
-            <h4 style="margin:0 0 8px">🏠 Property Summary</h4>
+            <h4 style="margin:0 0 8px">Property Summary</h4>
             <b>{props.get('rooms')}BHK {props.get('property_type')}</b> in {props.get('location')}, {props.get('city')}<br>
             <span style="color:#7f8699">{props.get('size_sqft'):,.0f} sq ft · {props.get('status')} · 
             Security Deposit: ₹{props.get('security_deposit'):,} · 
@@ -497,7 +497,7 @@ if "result" in st.session_state:
         """, unsafe_allow_html=True)
 
     with tab2:
-        st.markdown("### 🏘️ Comparable Property Analysis")
+        st.markdown("### Comparable Property Analysis")
         if comps:
             st.plotly_chart(make_comparison_chart(comps, ens_rent), use_container_width=True)
 
@@ -513,7 +513,7 @@ if "result" in st.session_state:
             delta_color     = "#00c9a7" if delta_pct <= 5 else "#f7b731"
             st.markdown(f"""
             <div class="card card-success">
-                <b>📈 Market Position:</b> Predicted rent of <b>{format_inr(ens_rent)}</b> is 
+                <b>Market Position:</b> Predicted rent of <b>{format_inr(ens_rent)}</b> is 
                 <span style="color:{delta_color}">{abs(delta_pct):.1f}% {delta_label}</span> 
                 the average comparable rent of ₹{avg_comp_rent:,.0f}.
             </div>
@@ -522,13 +522,13 @@ if "result" in st.session_state:
             st.info("No comparable properties found.")
 
     with tab3:
-        st.markdown("### ⚠️ Risk Assessment")
+        st.markdown("### Risk Assessment")
         st.markdown(f'<div class="card card-warn">{risks}</div>', unsafe_allow_html=True)
 
         st.divider()
-        st.markdown("### 💡 Investment Recommendation")
+        st.markdown("### Investment Recommendation")
         rec_c, rec_l = get_rec_class(advice)
-        st.markdown(f'<div class="rec-badge {rec_c}">🎯 {rec_l}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="rec-badge {rec_c}">{rec_l}</div>', unsafe_allow_html=True)
         st.markdown(f'<div class="card card-accent">{advice}</div>', unsafe_allow_html=True)
 
         st.markdown("#### Risk Factor Radar")
@@ -573,11 +573,11 @@ if "result" in st.session_state:
             """, unsafe_allow_html=True)
 
     with tab4:
-        st.markdown("### 📄 Full Investment Advisory Report")
+        st.markdown("### Full Investment Advisory Report")
 
         # Download button
         st.download_button(
-            label="📥 Download Report (.md)",
+            label="Download Report (.md)",
             data=report,
             file_name=f"RealAdvisor_Report_{props.get('city')}_{props.get('rooms')}BHK.md",
             mime="text/markdown",
@@ -589,7 +589,7 @@ if "result" in st.session_state:
         # Disclaimer box
         st.markdown("""
         <div class="card" style="border-color:#ee5a24;margin-top:2rem;">
-            <b style="color:#ee5a24">⚖️ Legal & Financial Disclaimer</b><br>
+            <b style="color:#ee5a24">Legal & Financial Disclaimer</b><br>
             This advisory report is generated by an AI system and is provided for informational purposes only.
             It does not constitute financial, legal, or investment advice. Past market performance does not
             guarantee future returns. Always consult a SEBI-registered investment advisor and a qualified
@@ -598,11 +598,11 @@ if "result" in st.session_state:
         """, unsafe_allow_html=True)
 
     with tab5:
-        st.markdown("### 🔍 Agent Execution Logs")
+        st.markdown("### Agent Execution Logs")
         st.markdown("*Full trace of the LangGraph workflow execution*")
 
         for i, log in enumerate(logs):
-            is_step = log.startswith(("🔍", "📊", "🗂️", "🏘️", "⚠️", "💡", "📝"))
+            is_step = log.startswith(("[STEP]",))
             color = "#6c63ff" if is_step else "#7f8699"
             st.markdown(f"""
             <div style="background:#1e2230;border-left:3px solid {color};padding:8px 12px;
@@ -613,23 +613,22 @@ if "result" in st.session_state:
             """, unsafe_allow_html=True)
 
         # State summary
-        with st.expander("📦 Raw Agent State (JSON)", expanded=False):
+        with st.expander("Raw Agent State (JSON)", expanded=False):
             safe_result = {k: v for k, v in result.items() if k not in ("step_logs",)}
             st.json(safe_result)
 
 elif not run_btn:
     st.markdown("""
     <div style="text-align:center;padding:4rem 2rem;color:#7f8699;">
-        <div style="font-size:4rem;margin-bottom:1rem;">🏙️</div>
         <h3 style="color:#e4e6f0;font-family:'Space Grotesk'">Ready to analyze your property</h3>
         <p>Configure property details in the sidebar and click <b>Run Advisory Analysis</b>.<br>
         The 7-step agentic pipeline will generate a comprehensive investment report.</p>
         <br>
         <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
-            <span style="background:#1e2230;padding:8px 16px;border-radius:20px;font-size:0.85rem;">🤖 LangGraph Workflow</span>
-            <span style="background:#1e2230;padding:8px 16px;border-radius:20px;font-size:0.85rem;">⚡ Groq AI (LLaMA 3.3)</span>
-            <span style="background:#1e2230;padding:8px 16px;border-radius:20px;font-size:0.85rem;">🗂️ FAISS RAG</span>
-            <span style="background:#1e2230;padding:8px 16px;border-radius:20px;font-size:0.85rem;">📊 ML Price Models</span>
+            <span style="background:#1e2230;padding:8px 16px;border-radius:20px;font-size:0.85rem;">LangGraph Workflow</span>
+            <span style="background:#1e2230;padding:8px 16px;border-radius:20px;font-size:0.85rem;">Groq AI (LLaMA 3.3)</span>
+            <span style="background:#1e2230;padding:8px 16px;border-radius:20px;font-size:0.85rem;">FAISS RAG</span>
+            <span style="background:#1e2230;padding:8px 16px;border-radius:20px;font-size:0.85rem;">ML Price Models</span>
         </div>
     </div>
     """, unsafe_allow_html=True)
